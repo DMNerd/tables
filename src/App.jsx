@@ -1,30 +1,36 @@
-import React, { useState, useMemo, useCallback } from 'react';
-import { withSwal } from 'react-sweetalert2';
-import * as mammoth from 'mammoth/mammoth.browser.js';
-import DOMPurify from 'dompurify';
-import debounce from 'debounce';
-import { FaPlus, FaColumns, FaFileAlt, FaUpload, FaTrash } from 'react-icons/fa';
-import './App.css';
+import React, { useState, useMemo, useCallback } from "react";
+import { withSwal } from "react-sweetalert2";
+import mammoth from "mammoth";
+import DOMPurify from "dompurify";
+import debounce from "debounce";
+import {
+  FaPlus,
+  FaColumns,
+  FaFileAlt,
+  FaUpload,
+  FaTrash,
+} from "react-icons/fa";
+import "./App.css";
 
 function App({ swal }) {
-  const [headers, setHeaders] = useState(['', '', '']);
+  const [headers, setHeaders] = useState(["", "", ""]);
   const [rows, setRows] = useState([
-    ['', '', ''],
-    ['', '', ''],
+    ["", "", ""],
+    ["", "", ""],
   ]);
-  const [markdown, setMarkdown] = useState('');
+  const [markdown, setMarkdown] = useState("");
   const [storedTables, setStoredTables] = useState([]);
-  const [selectedTableIndex, setSelectedTableIndex] = useState('');
+  const [selectedTableIndex, setSelectedTableIndex] = useState("");
 
   const sanitizeInput = (input) => DOMPurify.sanitize(input);
 
   const addRow = () => {
-    setRows((prev) => [...prev, Array(headers.length).fill('')]);
+    setRows((prev) => [...prev, Array(headers.length).fill("")]);
   };
 
   const addColumn = () => {
-    setHeaders((prev) => [...prev, '']);
-    setRows((prev) => prev.map((row) => [...row, '']));
+    setHeaders((prev) => [...prev, ""]);
+    setRows((prev) => prev.map((row) => [...row, ""]));
   };
 
   const deleteRow = (index) => {
@@ -33,7 +39,7 @@ function App({ swal }) {
 
   const deleteColumn = (index) => {
     if (headers.length <= 1) {
-      showError('Nelze odstranit poslední sloupec.');
+      showError("Nelze odstranit poslední sloupec.");
       return;
     }
     setHeaders((prev) => prev.filter((_, i) => i !== index));
@@ -51,60 +57,58 @@ function App({ swal }) {
       prev.map((row, r) =>
         r === rowIndex
           ? row.map((cell, c) => (c === cellIndex ? sanitized : cell))
-          : row
-      )
+          : row,
+      ),
     );
   };
 
   const generateMarkdown = () => {
     const headerLine =
-      '| ' +
+      "| " +
       headers
-        .map((h) => sanitizeInput(h || '').replace(/\n/g, ' / '))
-        .join(' | ') +
-      ' |';
-    const separatorLine =
-      '| ' + headers.map(() => '---').join(' | ') + ' |';
+        .map((h) => sanitizeInput(h || "").replace(/\n/g, " / "))
+        .join(" | ") +
+      " |";
+    const separatorLine = "| " + headers.map(() => "---").join(" | ") + " |";
     const rowLines = rows.map(
       (row) =>
-        '| ' +
+        "| " +
         row
-          .map((cell) => sanitizeInput(cell || '').replace(/\n/g, ' / '))
-          .join(' | ') +
-        ' |'
+          .map((cell) => sanitizeInput(cell || "").replace(/\n/g, " / "))
+          .join(" | ") +
+        " |",
     );
-    const md = [headerLine, separatorLine, ...rowLines].join('\n') + '\n';
+    const md = [headerLine, separatorLine, ...rowLines].join("\n") + "\n";
     setMarkdown(md);
   };
 
-  const populateTableFromMarkdown = useCallback((md) => {
-    const lines = md.trim().split('\n');
-    if (lines.length < 2) return;
-    const headerData = lines[0]
-      .split('|')
-      .map((cell) => cell.trim())
-      .filter(Boolean);
-    const rowData = lines
-      .slice(2)
-      .map((row) =>
+  const populateTableFromMarkdown = useCallback(
+    (md) => {
+      const lines = md.trim().split("\n");
+      if (lines.length < 2) return;
+      const headerData = lines[0]
+        .split("|")
+        .map((cell) => cell.trim())
+        .filter(Boolean);
+      const rowData = lines.slice(2).map((row) =>
         row
-          .split('|')
+          .split("|")
           .map((cell) => cell.trim())
-          .filter(Boolean)
+          .filter(Boolean),
       );
-    setHeaders(
-      headerData.map((h) => sanitizeInput(h.replace(/ \/ /g, ' ')))
-    );
-    setRows(
-      rowData.map((row) =>
-        row.map((c) => sanitizeInput(c.replace(/ \/ /g, ' ')))
-      )
-    );
-  }, [sanitizeInput]);
+      setHeaders(headerData.map((h) => sanitizeInput(h.replace(/ \/ /g, " "))));
+      setRows(
+        rowData.map((row) =>
+          row.map((c) => sanitizeInput(c.replace(/ \/ /g, " "))),
+        ),
+      );
+    },
+    [sanitizeInput],
+  );
 
   const debouncedPopulateFromMarkdown = useMemo(
     () => debounce(populateTableFromMarkdown, 300),
-    [populateTableFromMarkdown]
+    [populateTableFromMarkdown],
   );
 
   const handleMarkdownChange = (e) => {
@@ -118,20 +122,20 @@ function App({ swal }) {
     if (!file) return;
     const reader = new FileReader();
     const name = file.name.toLowerCase();
-    if (name.endsWith('.docx')) {
+    if (name.endsWith(".docx")) {
       reader.onload = (ev) => {
         processDocxFile(ev.target.result);
       };
       reader.readAsArrayBuffer(file);
-    } else if (name.endsWith('.html') || name.endsWith('.htm')) {
+    } else if (name.endsWith(".html") || name.endsWith(".htm")) {
       reader.onload = (ev) => {
         processHtmlFile(ev.target.result);
       };
       reader.readAsText(file);
     } else {
-      showError('Prosím vyberte DOCX nebo HTML soubor obsahující tabulku.');
+      showError("Prosím vyberte DOCX nebo HTML soubor obsahující tabulku.");
     }
-    e.target.value = '';
+    e.target.value = "";
   };
 
   const processDocxFile = (arrayBuffer) => {
@@ -139,50 +143,53 @@ function App({ swal }) {
       .convertToHtml({ arrayBuffer })
       .then((result) => {
         const sanitizedHtml = DOMPurify.sanitize(result.value, {
-          ADD_TAGS: ['table', 'tr', 'td', 'th'],
+          ADD_TAGS: ["table", "tr", "td", "th"],
         });
-        const docHtml = new DOMParser().parseFromString(sanitizedHtml, 'text/html');
-        const tables = docHtml.querySelectorAll('table');
+        const docHtml = new DOMParser().parseFromString(
+          sanitizedHtml,
+          "text/html",
+        );
+        const tables = docHtml.querySelectorAll("table");
         if (tables.length > 0) {
           setStoredTables(Array.from(tables).map((t) => t.outerHTML));
-          setSelectedTableIndex('0');
+          setSelectedTableIndex("0");
           populateFromHtmlTable(tables[0]);
         } else {
-          showError('V souboru nebyla nalezena validní tabulka.');
+          showError("V souboru nebyla nalezena validní tabulka.");
         }
       })
       .catch((error) => {
-        console.error('Error processing DOCX file:', error);
-        showError('Chyba zpracování souboru.');
+        console.error("Error processing DOCX file:", error);
+        showError("Chyba zpracování souboru.");
       });
   };
 
   const processHtmlFile = (htmlText) => {
     const sanitizedHtml = DOMPurify.sanitize(htmlText, {
-      ADD_TAGS: ['table', 'tr', 'td', 'th'],
+      ADD_TAGS: ["table", "tr", "td", "th"],
     });
-    const docHtml = new DOMParser().parseFromString(sanitizedHtml, 'text/html');
-    const tables = docHtml.querySelectorAll('table');
+    const docHtml = new DOMParser().parseFromString(sanitizedHtml, "text/html");
+    const tables = docHtml.querySelectorAll("table");
     if (tables.length > 0) {
       setStoredTables(Array.from(tables).map((t) => t.outerHTML));
-      setSelectedTableIndex('0');
+      setSelectedTableIndex("0");
       populateFromHtmlTable(tables[0]);
     } else {
-      showError('V souboru nebyla nalezena validní tabulka.');
+      showError("V souboru nebyla nalezena validní tabulka.");
     }
   };
 
   const populateFromHtmlTable = (html) => {
     const table =
-      typeof html === 'string'
+      typeof html === "string"
         ? new DOMParser()
             .parseFromString(
               DOMPurify.sanitize(html, {
-                ADD_TAGS: ['table', 'tr', 'td', 'th'],
+                ADD_TAGS: ["table", "tr", "td", "th"],
               }),
-              'text/html'
+              "text/html",
             )
-            .querySelector('table')
+            .querySelector("table")
         : html;
     if (!table) return;
     let maxColumns = 0;
@@ -192,11 +199,11 @@ function App({ swal }) {
       }
     });
     const headerRowCells = Array.from(table.rows[0].cells).map((cell) =>
-      sanitizeInput(cleanText(cell.innerHTML))
+      sanitizeInput(cleanText(cell.innerHTML)),
     );
     const newHeaders = [...headerRowCells];
     while (newHeaders.length < maxColumns) {
-      newHeaders.push('');
+      newHeaders.push("");
     }
     setHeaders(newHeaders);
     const dataRows = Array.from(table.rows)
@@ -206,11 +213,11 @@ function App({ swal }) {
         const leftPadding = Math.floor((maxColumns - totalCells) / 2);
         const rightPadding = maxColumns - totalCells - leftPadding;
         const rowData = [];
-        for (let i = 0; i < leftPadding; i++) rowData.push('');
+        for (let i = 0; i < leftPadding; i++) rowData.push("");
         Array.from(htmlRow.cells).forEach((cell) => {
           rowData.push(sanitizeInput(cleanText(cell.innerHTML)));
         });
-        for (let i = 0; i < rightPadding; i++) rowData.push('');
+        for (let i = 0; i < rightPadding; i++) rowData.push("");
         return rowData;
       });
     setRows(dataRows);
@@ -219,11 +226,11 @@ function App({ swal }) {
   const debouncedPopulateTable = useMemo(
     () =>
       debounce((idx) => {
-        if (idx !== '') {
+        if (idx !== "") {
           populateFromHtmlTable(storedTables[idx]);
         }
       }, 150),
-    [populateFromHtmlTable, storedTables]
+    [populateFromHtmlTable, storedTables],
   );
 
   const handleTableSelect = (e) => {
@@ -234,15 +241,20 @@ function App({ swal }) {
 
   const cleanText = (text) => {
     return text
-      .replace(/&nbsp;/g, ' ')
-      .replace(/<br\s*\/?>/gi, ' ')
-      .replace(/<\/?[^>]+(>|$)/g, ' ')
-      .replace(/\s+/g, ' ')
+      .replace(/&nbsp;/g, " ")
+      .replace(/<br\s*\/?>/gi, " ")
+      .replace(/<\/?[^>]+(>|$)/g, " ")
+      .replace(/\s+/g, " ")
       .trim();
   };
 
   const showError = (message) => {
-    swal.fire({ icon: 'error', title: 'Chyba', text: message, confirmButtonText: 'OK' });
+    swal.fire({
+      icon: "error",
+      title: "Chyba",
+      text: message,
+      confirmButtonText: "OK",
+    });
   };
 
   return (
@@ -285,7 +297,9 @@ function App({ swal }) {
                       type="text"
                       value={cell}
                       placeholder={`Řádek ${rowIndex + 1}, Sloupec ${cellIndex + 1}`}
-                      onChange={(e) => updateCell(rowIndex, cellIndex, e.target.value)}
+                      onChange={(e) =>
+                        updateCell(rowIndex, cellIndex, e.target.value)
+                      }
                     />
                   </td>
                 ))}
@@ -323,7 +337,11 @@ function App({ swal }) {
           </button>
           <label className="upload-label">
             <FaUpload />
-            <input type="file" accept=".html,.htm,.docx" onChange={handleFileUpload} />
+            <input
+              type="file"
+              accept=".html,.htm,.docx"
+              onChange={handleFileUpload}
+            />
             Nahrát soubor
           </label>
         </div>
