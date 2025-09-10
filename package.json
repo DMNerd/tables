@@ -1,17 +1,22 @@
 {
-  "name": "tabulky",
+  "name": "tables",
   "version": "1.0.0",
-  "main": "index.js",
+  "private": true,
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "echo \"No tests\""
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
   "dependencies": {
-    "compression": "^1.7.4",
-    "express": "^4.19.2",
-    "terser": "^5.31.6"
-  }
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "mammoth": "^1.4.23",
+    "react-sweetalert2": "^0.6.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.0.3",
+    "vite": "^5.0.0"
+  },
+  "packageManager": "pnpm@10.12.3+sha512.467df2c586056165580ad6dfb54ceaad94c5a30f80893ebdec5a44c5aa73c205ae4a5bb9d5ed6bb84ea7c249ece786642bbb49d06a307df218d03da41c317417"
 }

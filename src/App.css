@@ -1,0 +1,276 @@
+:root {
+    --font-color-primary: #333;
+    --font-color-secondary: #1a1a1a;
+    --bg-color-main: #fff;
+    --bg-color-container: #dcdce0;
+    --bg-color-hover-light: #b2ebf2;
+    --bg-color-hover-danger: #ffcdd2;
+    --bg-color-button-primary: #e0f7fa;
+    --bg-color-button-danger: #fce4ec;
+    --border-color-light: #ddd;
+    --border-color-container: #dfe3e8;
+    --font-size-main: 14px;
+    --font-size-heading: 24px;
+    --font-weight-medium: 500;
+    --btn-font-color-primary: #007b83;
+    --btn-font-color-danger: #ff1744;
+}
+
+body {
+    font-family:
+        -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
+        Arial, sans-serif;
+    background-color: var(--bg-color-main);
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    flex-direction: column;
+    color: var(--font-color-primary);
+}
+
+h1 {
+    color: var(--font-color-secondary);
+    font-weight: var(--font-weight-medium);
+    font-size: var(--font-size-heading);
+}
+
+.output-container,
+.table-container {
+    background-color: var(--bg-color-container);
+    padding: 20px;
+    max-width: 600px;
+    width: 100%;
+    margin-top: 20px;
+    margin-bottom: 40px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+    border: 1px solid var(--border-color-container);
+}
+
+input[type="text"],
+table,
+textarea {
+    width: 100%;
+    font-size: var(--font-size-main);
+}
+
+h1,
+table {
+    margin-bottom: 20px;
+}
+
+table {
+    border-collapse: collapse;
+}
+
+td,
+th {
+    border: 1px solid var(--border-color-light);
+    padding: 12px;
+    text-align: left;
+    font-family: inherit;
+}
+
+th {
+    background-color: var(--bg-color-container);
+    font-weight: var(--font-weight-medium);
+}
+
+input[type="text"],
+textarea {
+    padding: 8px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    background-color: var(--bg-color-main);
+    color: var(--font-color-primary);
+    font-family: inherit;
+    box-sizing: border-box;
+}
+
+textarea {
+    height: 150px;
+    resize: none;
+    margin-top: 10px;
+}
+
+.action-buttons,
+.button-container,
+.buttons,
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.action-buttons,
+.button-container,
+.buttons {
+    gap: 10px;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
+.upload-label,
+button {
+    padding: 8px 16px;
+    font-size: var(--font-size-main);
+    font-weight: 700;
+    border: 0;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+#addColumnBtn,
+#addRowBtn,
+#generateMarkdownBtn,
+.upload-label {
+    background-color: var(--bg-color-button-primary);
+    color: var(--btn-font-color-primary);
+}
+
+#addColumnBtn:hover,
+#addRowBtn:hover,
+#generateMarkdownBtn:hover,
+.upload-label:hover {
+    background-color: var(--bg-color-hover-light);
+}
+
+#deleteColumnBtn,
+#deleteRowBtn {
+    background-color: var(--bg-color-button-danger);
+    color: var(--btn-font-color-danger);
+}
+
+#deleteColumnBtn:hover,
+#deleteRowBtn:hover {
+    background-color: var(--bg-color-hover-danger);
+}
+
+#clearInputsBtn {
+    background-color: var(--bg-color-button-primary);
+    color: var(--btn-font-color-primary);
+}
+
+#clearInputsBtn:hover {
+    background-color: var(--bg-color-hover-light);
+}
+
+#generateMarkdownBtn i,
+.buttons button i,
+.upload-label i {
+    margin-left: 6px;
+}
+
+.upload-label input[type="file"] {
+    display: none;
+}
+
+.table-selector-container {
+    margin-bottom: 20px;
+}
+
+select#tableSelector {
+    padding: 10px;
+    font-size: 16px;
+    border-radius: 5px;
+    border: 1px solid #d1d5db;
+    width: 100%;
+}
+
+hr.separator {
+    border: 0;
+    border-top: 10px solid var(--bg-color-main);
+    border-radius: 2px;
+    margin: 2px auto;
+    width: 90%;
+}
+
+.swal2-input,
+.swal2-popup,
+.swal2-textarea {
+    font-size: 14px !important;
+    color: #333 !important;
+    border-radius: 10px !important;
+    background-color: #fff !important;
+    border: 1px solid #ccc !important;
+}
+
+.swal2-cancel,
+.swal2-confirm,
+.swal2-input,
+.swal2-popup,
+.swal2-textarea {
+    font-family:
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        Roboto,
+        Arial,
+        sans-serif !important;
+}
+
+.swal2-content,
+.swal2-title {
+    color: #333 !important;
+    font-size: 24px !important;
+    font-weight: 700 !important;
+}
+
+.swal2-content {
+    color: #555 !important;
+    font-size: 16px !important;
+}
+
+.swal2-input,
+.swal2-textarea {
+    padding: 8px !important;
+}
+
+.delete-cn-button,
+.delete-cn-button:hover,
+.swal2-cancel,
+.swal2-cancel:hover,
+.swal2-confirm,
+.swal2-confirm:hover {
+    padding: 8px 16px !important;
+    border: 0 !important;
+    border-radius: 4px !important;
+    font-weight: 700 !important;
+    font-size: 14px !important;
+    cursor: pointer !important;
+    outline: 0 !important;
+    display: inline-flex;
+    align-items: center;
+}
+
+.swal2-confirm {
+    background-color: #d8f2f6 !important;
+    color: #007c8c !important;
+}
+
+.delete-cn-button::after,
+.swal2-cancel::after,
+.swal2-confirm::after {
+    content: "";
+    font-family: "Font Awesome 5 Free";
+    font-weight: 900;
+    color: #007c8c;
+    margin-left: 8px;
+}
+
+.delete-cn-button,
+.swal2-cancel {
+    background-color: #fdecea !important;
+    color: #d0021b !important;
+}
+
+.delete-cn-button::after,
+.swal2-cancel::after {
+    content: "";
+    color: #d0021b;
+}
+
+#inputTable {
+    margin-bottom: 0 !important;
+}
