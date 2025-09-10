@@ -120,17 +120,13 @@ button {
     transition: background-color 0.2s ease;
 }
 
-#addColumnBtn,
-#addRowBtn,
-#generateMarkdownBtn,
+.primary-btn,
 .upload-label {
     background-color: var(--bg-color-button-primary);
     color: var(--btn-font-color-primary);
 }
 
-#addColumnBtn:hover,
-#addRowBtn:hover,
-#generateMarkdownBtn:hover,
+.primary-btn:hover,
 .upload-label:hover {
     background-color: var(--bg-color-hover-light);
 }
@@ -164,19 +160,11 @@ button {
     width: 50px;
 }
 
-#clearInputsBtn {
-    background-color: var(--bg-color-button-primary);
-    color: var(--btn-font-color-primary);
-}
+/* Legacy IDs removed (#clearInputsBtn etc.) */
 
-#clearInputsBtn:hover {
-    background-color: var(--bg-color-hover-light);
-}
-
-#generateMarkdownBtn i,
-.buttons button i,
+.primary-btn i,
 .upload-label i {
-    margin-left: 6px;
+    margin-right: 6px;
 }
 
 .upload-label input[type="file"] {

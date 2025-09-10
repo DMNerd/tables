@@ -250,10 +250,10 @@ function App({ swal }) {
       <h1>Generátor Tabulek (pro vložení do markdown)</h1>
       <div className="table-container">
         <div className="buttons">
-          <button onClick={addRow}>
+          <button className="primary-btn" onClick={addRow}>
             <FaPlus /> Přidat řádek
           </button>
-          <button onClick={addColumn}>
+          <button className="primary-btn" onClick={addColumn}>
             <FaColumns /> Přidat Sloupec
           </button>
         </div>
@@ -288,6 +288,15 @@ function App({ swal }) {
           <tbody>
             {rows.map((row, rowIndex) => (
               <tr key={rowIndex}>
+                <td className="delete-cell">
+                  <button
+                    className="delete-row-btn"
+                    onClick={() => deleteRow(rowIndex)}
+                    title="Smazat řádek"
+                  >
+                    <FaTrash />
+                  </button>
+                </td>
                 {row.map((cell, cellIndex) => (
                   <td key={cellIndex}>
                     <input
@@ -298,21 +307,12 @@ function App({ swal }) {
                     />
                   </td>
                 ))}
-                <td className="delete-cell">
-                  <button
-                    className="delete-row-btn"
-                    onClick={() => deleteRow(rowIndex)}
-                    title="Smazat řádek"
-                  >
-                    <FaTrash />
-                  </button>
-                </td>
               </tr>
             ))}
           </tbody>
         </table>
         <div className="action-buttons">
-          <button onClick={generateMarkdown}>
+          <button className="primary-btn" onClick={generateMarkdown}>
             <FaFileAlt /> Generovat/Formátovat Tabulku
           </button>
           <label className="upload-label">
