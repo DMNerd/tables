@@ -135,15 +135,33 @@ button {
     background-color: var(--bg-color-hover-light);
 }
 
-#deleteColumnBtn,
-#deleteRowBtn {
+.delete-column-btn,
+.delete-row-btn {
     background-color: var(--bg-color-button-danger);
     color: var(--btn-font-color-danger);
 }
 
-#deleteColumnBtn:hover,
-#deleteRowBtn:hover {
+.delete-column-btn:hover,
+.delete-row-btn:hover {
     background-color: var(--bg-color-hover-danger);
+}
+
+.header-cell {
+    display: flex;
+    align-items: center;
+}
+
+.header-cell input {
+    flex: 1;
+}
+
+.header-cell button {
+    margin-left: 6px;
+}
+
+.delete-cell {
+    text-align: center;
+    width: 50px;
 }
 
 #clearInputsBtn {

@@ -3,7 +3,7 @@ import { withSwal } from 'react-sweetalert2';
 import * as mammoth from 'mammoth/mammoth.browser.js';
 import DOMPurify from 'dompurify';
 import debounce from 'debounce';
-import { FaPlus, FaColumns, FaFileAlt, FaUpload } from 'react-icons/fa';
+import { FaPlus, FaColumns, FaFileAlt, FaUpload, FaTrash } from 'react-icons/fa';
 import './App.css';
 
 function App({ swal }) {
@@ -25,6 +25,19 @@ function App({ swal }) {
   const addColumn = () => {
     setHeaders((prev) => [...prev, '']);
     setRows((prev) => prev.map((row) => [...row, '']));
+  };
+
+  const deleteRow = (index) => {
+    setRows((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const deleteColumn = (index) => {
+    if (headers.length <= 1) {
+      showError('Nelze odstranit poslední sloupec.');
+      return;
+    }
+    setHeaders((prev) => prev.filter((_, i) => i !== index));
+    setRows((prev) => prev.map((row) => row.filter((_, i) => i !== index)));
   };
 
   const updateHeader = (index, value) => {
@@ -249,12 +262,22 @@ function App({ swal }) {
             <tr>
               {headers.map((header, i) => (
                 <th key={i}>
-                  <input
-                    type="text"
-                    value={header}
-                    placeholder={`Nadpis ${i + 1}`}
-                    onChange={(e) => updateHeader(i, e.target.value)}
-                  />
+                  <div className="header-cell">
+                    <input
+                      type="text"
+                      value={header}
+                      placeholder={`Nadpis ${i + 1}`}
+                      onChange={(e) => updateHeader(i, e.target.value)}
+                    />
+                    <button
+                      className="delete-column-btn"
+                      onClick={() => deleteColumn(i)}
+                      disabled={headers.length <= 1}
+                      title="Smazat sloupec"
+                    >
+                      <FaTrash />
+                    </button>
+                  </div>
                 </th>
               ))}
             </tr>
@@ -275,6 +298,15 @@ function App({ swal }) {
                     />
                   </td>
                 ))}
+                <td className="delete-cell">
+                  <button
+                    className="delete-row-btn"
+                    onClick={() => deleteRow(rowIndex)}
+                    title="Smazat řádek"
+                  >
+                    <FaTrash />
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>
