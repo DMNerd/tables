@@ -278,15 +278,6 @@ function App({ swal }) {
           <tbody>
             {rows.map((row, rowIndex) => (
               <tr key={rowIndex}>
-                <td className="delete-cell">
-                  <button
-                    className="delete-row-btn"
-                    onClick={() => deleteRow(rowIndex)}
-                    title="Smazat řádek"
-                  >
-                    <FaTrash />
-                  </button>
-                </td>
                 {row.map((cell, cellIndex) => (
                   <td key={cellIndex}>
                     <input
@@ -297,10 +288,18 @@ function App({ swal }) {
                     />
                   </td>
                 ))}
+                <td className="delete-cell">
+                  <button
+                    className="delete-row-btn"
+                    onClick={() => deleteRow(rowIndex)}
+                    title="Smazat řádek"
+                  >
+                    <FaTrash />
+                  </button>
+                </td>
               </tr>
             ))}
             <tr className="column-delete-row">
-              <td className="delete-cell" />
               {headers.map((_, i) => (
                 <td key={i} className="delete-column-cell">
                   <button
@@ -313,6 +312,7 @@ function App({ swal }) {
                   </button>
                 </td>
               ))}
+              <td className="delete-cell" />
             </tr>
           </tbody>
         </table>
