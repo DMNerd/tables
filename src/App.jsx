@@ -262,22 +262,12 @@ function App({ swal }) {
             <tr>
               {headers.map((header, i) => (
                 <th key={i}>
-                  <div className="header-cell">
-                    <input
-                      type="text"
-                      value={header}
-                      placeholder={`Nadpis ${i + 1}`}
-                      onChange={(e) => updateHeader(i, e.target.value)}
-                    />
-                    <button
-                      className="delete-column-btn"
-                      onClick={() => deleteColumn(i)}
-                      disabled={headers.length <= 1}
-                      title="Smazat sloupec"
-                    >
-                      <FaTrash />
-                    </button>
-                  </div>
+                  <input
+                    type="text"
+                    value={header}
+                    placeholder={`Nadpis ${i + 1}`}
+                    onChange={(e) => updateHeader(i, e.target.value)}
+                  />
                 </th>
               ))}
             </tr>
@@ -309,6 +299,21 @@ function App({ swal }) {
                 ))}
               </tr>
             ))}
+            <tr className="column-delete-row">
+              <td className="delete-cell" />
+              {headers.map((_, i) => (
+                <td key={i} className="delete-column-cell">
+                  <button
+                    className="delete-column-btn"
+                    onClick={() => deleteColumn(i)}
+                    disabled={headers.length <= 1}
+                    title="Smazat sloupec"
+                  >
+                    <FaTrash />
+                  </button>
+                </td>
+              ))}
+            </tr>
           </tbody>
         </table>
         <div className="action-buttons">

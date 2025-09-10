@@ -142,17 +142,8 @@ button {
     background-color: var(--bg-color-hover-danger);
 }
 
-.header-cell {
-    display: flex;
-    align-items: center;
-}
-
-.header-cell input {
-    flex: 1;
-}
-
-.header-cell button {
-    margin-left: 6px;
+.delete-column-cell {
+    text-align: center;
 }
 
 .delete-cell {
