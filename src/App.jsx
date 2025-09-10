@@ -1,6 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { withSwal } from 'react-sweetalert2';
 import * as mammoth from 'mammoth/mammoth.browser.js';
+import DOMPurify from 'dompurify';
+import debounce from 'debounce';
+import { FaPlus, FaColumns, FaFileAlt, FaUpload } from 'react-icons/fa';
 import './App.css';
 
 function App({ swal }) {
@@ -13,6 +16,8 @@ function App({ swal }) {
   const [storedTables, setStoredTables] = useState([]);
   const [selectedTableIndex, setSelectedTableIndex] = useState('');
 
+  const sanitizeInput = (input) => DOMPurify.sanitize(input);
+
   const addRow = () => {
     setRows((prev) => [...prev, Array(headers.length).fill('')]);
   };
@@ -23,14 +28,16 @@ function App({ swal }) {
   };
 
   const updateHeader = (index, value) => {
-    setHeaders((prev) => prev.map((h, i) => (i === index ? value : h)));
+    const sanitized = sanitizeInput(value);
+    setHeaders((prev) => prev.map((h, i) => (i === index ? sanitized : h)));
   };
 
   const updateCell = (rowIndex, cellIndex, value) => {
+    const sanitized = sanitizeInput(value);
     setRows((prev) =>
       prev.map((row, r) =>
         r === rowIndex
-          ? row.map((cell, c) => (c === cellIndex ? value : cell))
+          ? row.map((cell, c) => (c === cellIndex ? sanitized : cell))
           : row
       )
     );
@@ -38,18 +45,26 @@ function App({ swal }) {
 
   const generateMarkdown = () => {
     const headerLine =
-      '| ' + headers.map((h) => (h || '').replace(/\n/g, ' / ')).join(' | ') + ' |';
+      '| ' +
+      headers
+        .map((h) => sanitizeInput(h || '').replace(/\n/g, ' / '))
+        .join(' | ') +
+      ' |';
     const separatorLine =
       '| ' + headers.map(() => '---').join(' | ') + ' |';
     const rowLines = rows.map(
       (row) =>
-        '| ' + row.map((cell) => (cell || '').replace(/\n/g, ' / ')).join(' | ') + ' |'
+        '| ' +
+        row
+          .map((cell) => sanitizeInput(cell || '').replace(/\n/g, ' / '))
+          .join(' | ') +
+        ' |'
     );
     const md = [headerLine, separatorLine, ...rowLines].join('\n') + '\n';
     setMarkdown(md);
   };
 
-  const populateTableFromMarkdown = (md) => {
+  const populateTableFromMarkdown = useCallback((md) => {
     const lines = md.trim().split('\n');
     if (lines.length < 2) return;
     const headerData = lines[0]
@@ -64,26 +79,44 @@ function App({ swal }) {
           .map((cell) => cell.trim())
           .filter(Boolean)
       );
-    setHeaders(headerData.map((h) => h.replace(/ \/ /g, ' ')));
-    setRows(rowData.map((row) => row.map((c) => c.replace(/ \/ /g, ' '))));
-  };
+    setHeaders(
+      headerData.map((h) => sanitizeInput(h.replace(/ \/ /g, ' ')))
+    );
+    setRows(
+      rowData.map((row) =>
+        row.map((c) => sanitizeInput(c.replace(/ \/ /g, ' ')))
+      )
+    );
+  }, [sanitizeInput]);
+
+  const debouncedPopulateFromMarkdown = useMemo(
+    () => debounce(populateTableFromMarkdown, 300),
+    [populateTableFromMarkdown]
+  );
 
   const handleMarkdownChange = (e) => {
     const value = e.target.value;
     setMarkdown(value);
-    populateTableFromMarkdown(value);
+    debouncedPopulateFromMarkdown(value);
   };
 
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
-    if (file && file.name.endsWith('.docx')) {
-      const reader = new FileReader();
+    if (!file) return;
+    const reader = new FileReader();
+    const name = file.name.toLowerCase();
+    if (name.endsWith('.docx')) {
       reader.onload = (ev) => {
         processDocxFile(ev.target.result);
       };
       reader.readAsArrayBuffer(file);
+    } else if (name.endsWith('.html') || name.endsWith('.htm')) {
+      reader.onload = (ev) => {
+        processHtmlFile(ev.target.result);
+      };
+      reader.readAsText(file);
     } else {
-      showError('Prosím vyberte DOCX soubor obsahující tabulku.');
+      showError('Prosím vyberte DOCX nebo HTML soubor obsahující tabulku.');
     }
     e.target.value = '';
   };
@@ -92,7 +125,10 @@ function App({ swal }) {
     mammoth
       .convertToHtml({ arrayBuffer })
       .then((result) => {
-        const docHtml = new DOMParser().parseFromString(result.value, 'text/html');
+        const sanitizedHtml = DOMPurify.sanitize(result.value, {
+          ADD_TAGS: ['table', 'tr', 'td', 'th'],
+        });
+        const docHtml = new DOMParser().parseFromString(sanitizedHtml, 'text/html');
         const tables = docHtml.querySelectorAll('table');
         if (tables.length > 0) {
           setStoredTables(Array.from(tables).map((t) => t.outerHTML));
@@ -108,10 +144,32 @@ function App({ swal }) {
       });
   };
 
+  const processHtmlFile = (htmlText) => {
+    const sanitizedHtml = DOMPurify.sanitize(htmlText, {
+      ADD_TAGS: ['table', 'tr', 'td', 'th'],
+    });
+    const docHtml = new DOMParser().parseFromString(sanitizedHtml, 'text/html');
+    const tables = docHtml.querySelectorAll('table');
+    if (tables.length > 0) {
+      setStoredTables(Array.from(tables).map((t) => t.outerHTML));
+      setSelectedTableIndex('0');
+      populateFromHtmlTable(tables[0]);
+    } else {
+      showError('V souboru nebyla nalezena validní tabulka.');
+    }
+  };
+
   const populateFromHtmlTable = (html) => {
     const table =
       typeof html === 'string'
-        ? new DOMParser().parseFromString(html, 'text/html').querySelector('table')
+        ? new DOMParser()
+            .parseFromString(
+              DOMPurify.sanitize(html, {
+                ADD_TAGS: ['table', 'tr', 'td', 'th'],
+              }),
+              'text/html'
+            )
+            .querySelector('table')
         : html;
     if (!table) return;
     let maxColumns = 0;
@@ -121,7 +179,7 @@ function App({ swal }) {
       }
     });
     const headerRowCells = Array.from(table.rows[0].cells).map((cell) =>
-      cleanText(cell.innerHTML)
+      sanitizeInput(cleanText(cell.innerHTML))
     );
     const newHeaders = [...headerRowCells];
     while (newHeaders.length < maxColumns) {
@@ -137,7 +195,7 @@ function App({ swal }) {
         const rowData = [];
         for (let i = 0; i < leftPadding; i++) rowData.push('');
         Array.from(htmlRow.cells).forEach((cell) => {
-          rowData.push(cleanText(cell.innerHTML));
+          rowData.push(sanitizeInput(cleanText(cell.innerHTML)));
         });
         for (let i = 0; i < rightPadding; i++) rowData.push('');
         return rowData;
@@ -145,12 +203,20 @@ function App({ swal }) {
     setRows(dataRows);
   };
 
+  const debouncedPopulateTable = useMemo(
+    () =>
+      debounce((idx) => {
+        if (idx !== '') {
+          populateFromHtmlTable(storedTables[idx]);
+        }
+      }, 150),
+    [populateFromHtmlTable, storedTables]
+  );
+
   const handleTableSelect = (e) => {
     const index = e.target.value;
     setSelectedTableIndex(index);
-    if (index !== '') {
-      populateFromHtmlTable(storedTables[index]);
-    }
+    debouncedPopulateTable(index);
   };
 
   const cleanText = (text) => {
@@ -171,8 +237,12 @@ function App({ swal }) {
       <h1>Generátor Tabulek (pro vložení do markdown)</h1>
       <div className="table-container">
         <div className="buttons">
-          <button onClick={addRow}>Přidat řádek</button>
-          <button onClick={addColumn}>Přidat Sloupec</button>
+          <button onClick={addRow}>
+            <FaPlus /> Přidat řádek
+          </button>
+          <button onClick={addColumn}>
+            <FaColumns /> Přidat Sloupec
+          </button>
         </div>
         <table id="inputTable">
           <tbody>
@@ -210,8 +280,11 @@ function App({ swal }) {
           </tbody>
         </table>
         <div className="action-buttons">
-          <button onClick={generateMarkdown}>Generovat/Formátovat Tabulku</button>
+          <button onClick={generateMarkdown}>
+            <FaFileAlt /> Generovat/Formátovat Tabulku
+          </button>
           <label className="upload-label">
+            <FaUpload />
             <input type="file" accept=".html,.htm,.docx" onChange={handleFileUpload} />
             Nahrát soubor
           </label>
