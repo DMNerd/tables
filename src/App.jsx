@@ -270,6 +270,7 @@ function App({ swal }) {
                   />
                 </th>
               ))}
+              <th className="delete-cell" />
             </tr>
           </tbody>
         </table>
