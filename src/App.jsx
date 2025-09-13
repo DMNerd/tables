@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useRef } from 'react';
 import { withSwal } from 'react-sweetalert2';
 import * as mammoth from 'mammoth/mammoth.browser.js';
 import DOMPurify from 'dompurify';
@@ -7,11 +7,15 @@ import { FaPlus, FaColumns, FaFileAlt, FaUpload, FaTrash } from 'react-icons/fa'
 import './App.css';
 
 function App({ swal }) {
+  const idRef = useRef(0);
+  const getId = () => idRef.current++;
   const [headers, setHeaders] = useState(['', '', '']);
   const [rows, setRows] = useState([
     ['', '', ''],
     ['', '', ''],
   ]);
+  const [headerIds, setHeaderIds] = useState([getId(), getId(), getId()]);
+  const [rowIds, setRowIds] = useState([getId(), getId()]);
   const [markdown, setMarkdown] = useState('');
   const [storedTables, setStoredTables] = useState([]);
   const [selectedTableIndex, setSelectedTableIndex] = useState('');
@@ -20,15 +24,18 @@ function App({ swal }) {
 
   const addRow = () => {
     setRows((prev) => [...prev, Array(headers.length).fill('')]);
+    setRowIds((prev) => [...prev, getId()]);
   };
 
   const addColumn = () => {
     setHeaders((prev) => [...prev, '']);
+    setHeaderIds((prev) => [...prev, getId()]);
     setRows((prev) => prev.map((row) => [...row, '']));
   };
 
   const deleteRow = (index) => {
     setRows((prev) => prev.filter((_, i) => i !== index));
+    setRowIds((prev) => prev.filter((_, i) => i !== index));
   };
 
   const deleteColumn = (index) => {
@@ -37,6 +44,7 @@ function App({ swal }) {
       return;
     }
     setHeaders((prev) => prev.filter((_, i) => i !== index));
+    setHeaderIds((prev) => prev.filter((_, i) => i !== index));
     setRows((prev) => prev.map((row) => row.filter((_, i) => i !== index)));
   };
 
@@ -82,24 +90,30 @@ function App({ swal }) {
     if (lines.length < 2) return;
     const headerData = lines[0]
       .split('|')
-      .map((cell) => cell.trim())
-      .filter(Boolean);
-    const rowData = lines
-      .slice(2)
-      .map((row) =>
-        row
-          .split('|')
-          .map((cell) => cell.trim())
-          .filter(Boolean)
-      );
-    setHeaders(
-      headerData.map((h) => sanitizeInput(h.replace(/ \/ /g, ' ')))
+      .slice(1, -1)
+      .map((cell) => cell.trim());
+    const rowData = lines.slice(2).map((row) =>
+      row
+        .split('|')
+        .slice(1, -1)
+        .map((cell) => cell.trim())
     );
-    setRows(
-      rowData.map((row) =>
-        row.map((c) => sanitizeInput(c.replace(/ \/ /g, ' ')))
-      )
+    const sanitizedHeaders = headerData.map((h) =>
+      sanitizeInput(h.replace(/ \/ /g, ' '))
     );
+    const sanitizedRows = rowData.map((row) =>
+      row.map((c) => sanitizeInput(c.replace(/ \/ /g, ' ')))
+    );
+    const columnCount = sanitizedHeaders.length;
+    const normalizedRows = sanitizedRows.map((row) => {
+      const newRow = [...row];
+      while (newRow.length < columnCount) newRow.push('');
+      return newRow;
+    });
+    setHeaders(sanitizedHeaders);
+    setRows(normalizedRows);
+    setHeaderIds(sanitizedHeaders.map(() => getId()));
+    setRowIds(normalizedRows.map(() => getId()));
   }, [sanitizeInput]);
 
   const debouncedPopulateFromMarkdown = useMemo(
@@ -185,35 +199,42 @@ function App({ swal }) {
             .querySelector('table')
         : html;
     if (!table) return;
-    let maxColumns = 0;
-    Array.from(table.rows).forEach((row) => {
-      if (row.cells.length > maxColumns) {
-        maxColumns = row.cells.length;
-      }
-    });
-    const headerRowCells = Array.from(table.rows[0].cells).map((cell) =>
-      sanitizeInput(cleanText(cell.innerHTML))
-    );
-    const newHeaders = [...headerRowCells];
-    while (newHeaders.length < maxColumns) {
-      newHeaders.push('');
-    }
-    setHeaders(newHeaders);
-    const dataRows = Array.from(table.rows)
-      .slice(1)
-      .map((htmlRow, rowIndex) => {
-        const totalCells = htmlRow.cells.length;
-        const leftPadding = Math.floor((maxColumns - totalCells) / 2);
-        const rightPadding = maxColumns - totalCells - leftPadding;
-        const rowData = [];
-        for (let i = 0; i < leftPadding; i++) rowData.push('');
-        Array.from(htmlRow.cells).forEach((cell) => {
-          rowData.push(sanitizeInput(cleanText(cell.innerHTML)));
-        });
-        for (let i = 0; i < rightPadding; i++) rowData.push('');
-        return rowData;
+
+    const grid = [];
+    Array.from(table.rows).forEach((htmlRow, rowIndex) => {
+      grid[rowIndex] = grid[rowIndex] || [];
+      let colIndex = 0;
+      while (grid[rowIndex][colIndex] !== undefined) colIndex++;
+      Array.from(htmlRow.cells).forEach((cell) => {
+        while (grid[rowIndex][colIndex] !== undefined) colIndex++;
+        const content = sanitizeInput(cleanText(cell.innerHTML));
+        const colspan = parseInt(cell.getAttribute('colspan')) || 1;
+        const rowspan = parseInt(cell.getAttribute('rowspan')) || 1;
+        grid[rowIndex][colIndex] = content;
+        for (let c = 1; c < colspan; c++) {
+          grid[rowIndex][colIndex + c] = '';
+        }
+        for (let r = 1; r < rowspan; r++) {
+          grid[rowIndex + r] = grid[rowIndex + r] || [];
+          for (let c = 0; c < colspan; c++) {
+            grid[rowIndex + r][colIndex + c] = '';
+          }
+        }
+        colIndex += colspan;
       });
-    setRows(dataRows);
+    });
+
+    const maxColumns = grid.reduce((max, row) => Math.max(max, row.length), 0);
+    const normalizedGrid = grid.map((row) => {
+      const newRow = [...row];
+      while (newRow.length < maxColumns) newRow.push('');
+      return newRow;
+    });
+    if (normalizedGrid.length === 0) return;
+    setHeaders(normalizedGrid[0]);
+    setRows(normalizedGrid.slice(1));
+    setHeaderIds(normalizedGrid[0].map(() => getId()));
+    setRowIds(normalizedGrid.slice(1).map(() => getId()));
   };
 
   const debouncedPopulateTable = useMemo(
@@ -261,7 +282,7 @@ function App({ swal }) {
           <tbody>
             <tr>
               {headers.map((header, i) => (
-                <th key={i}>
+                <th key={headerIds[i]}>
                   <input
                     type="text"
                     value={header}
@@ -278,9 +299,9 @@ function App({ swal }) {
         <table id="inputTableRows">
           <tbody>
             {rows.map((row, rowIndex) => (
-              <tr key={rowIndex}>
+              <tr key={rowIds[rowIndex]}>
                 {row.map((cell, cellIndex) => (
-                  <td key={cellIndex}>
+                  <td key={`${rowIds[rowIndex]}-${headerIds[cellIndex]}`}>
                     <input
                       type="text"
                       value={cell}
@@ -302,7 +323,7 @@ function App({ swal }) {
             ))}
             <tr className="column-delete-row">
               {headers.map((_, i) => (
-                <td key={i} className="delete-column-cell">
+                <td key={headerIds[i]} className="delete-column-cell">
                   <button
                     className="delete-column-btn"
                     onClick={() => deleteColumn(i)}
