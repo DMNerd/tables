@@ -1,24 +1,30 @@
+import React, { memo } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { UniqueIdentifier } from '@dnd-kit/core';
-import type { CSSProperties, PropsWithChildren } from 'react';
 
-type SortableRowProps = PropsWithChildren<{
-  id: UniqueIdentifier;
-}>;
+export type SortableRowProps = {
+  id: UniqueIdentifier;           // <-- was string
+  children: React.ReactNode;
+  className?: string;
+  style?: React.CSSProperties;
+  disabled?: boolean;
+};
 
-export default function SortableRow({ id, children }: SortableRowProps): JSX.Element {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
-  const style: CSSProperties = {
-    transform: CSS.Transform.toString(transform ?? null),
+function SortableRowBase({ id, children, className, style, disabled = false }: SortableRowProps) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id, disabled });
+  const finalStyle: React.CSSProperties = {
+    ...style,
+    transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.6 : undefined,
-    cursor: 'grab',
+    cursor: disabled ? 'default' : 'grab',
   };
-
   return (
-    <tr ref={setNodeRef} style={style} {...attributes} {...listeners}>
+    <tr ref={setNodeRef} className={className} style={finalStyle} {...attributes} {...listeners}>
       {children}
     </tr>
   );
 }
+
+export default memo(SortableRowBase);

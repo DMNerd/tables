@@ -1,24 +1,33 @@
+import React, { memo } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { UniqueIdentifier } from '@dnd-kit/core';
-import type { CSSProperties, PropsWithChildren } from 'react';
 
-type SortableHeaderCellProps = PropsWithChildren<{
-  id: UniqueIdentifier;
-}>;
+export type SortableHeaderCellProps = {
+  id: UniqueIdentifier;           // <-- was string
+  children: React.ReactNode;
+  className?: string;
+  style?: React.CSSProperties;
+  disabled?: boolean;
+  as?: 'th' | 'div';
+};
 
-export default function SortableHeaderCell({ id, children }: SortableHeaderCellProps): JSX.Element {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
-  const style: CSSProperties = {
-    transform: CSS.Transform.toString(transform ?? null),
+function SortableHeaderCellBase({ id, children, className, style, disabled = false, as = 'th' }: SortableHeaderCellProps) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id, disabled });
+  const finalStyle: React.CSSProperties = {
+    ...style,
+    transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.6 : undefined,
-    cursor: 'grab',
+    cursor: disabled ? 'default' : 'grab',
+    userSelect: 'none',
   };
-
+  const Comp: any = as;
   return (
-    <th ref={setNodeRef} style={style} {...attributes} {...listeners}>
+    <Comp ref={setNodeRef} className={className} style={finalStyle} {...attributes} {...listeners}>
       {children}
-    </th>
+    </Comp>
   );
 }
+
+export default memo(SortableHeaderCellBase);

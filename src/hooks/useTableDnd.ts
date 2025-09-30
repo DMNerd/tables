@@ -1,68 +1,64 @@
 import { useCallback } from 'react';
-import { PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
+import type { UniqueIdentifier } from '@dnd-kit/core';
+import type { DragEndEvent, DragStartEvent, DragOverEvent } from '@dnd-kit/core';
 
-type DraggableId = string | number;
+export type ID = UniqueIdentifier;
 
-type UseTableDndArgs = {
-  headerIds: DraggableId[];
-  rowIds: DraggableId[];
-  moveColumn: (from: number, to: number) => void;
-  moveRow: (from: number, to: number) => void;
-  dragDistance?: number;
+export type UseTableDndParams = {
+  headerIds: ID[];
+  rowIds: ID[];
+  onReorderColumns: (fromIndex: number, toIndex: number) => void; 
+  onReorderRows: (fromIndex: number, toIndex: number) => void;    
 };
 
-type UseTableDndResult = {
-  headerDnd: {
-    sensors: ReturnType<typeof useSensors>;
-    onDragEnd: (event: DragEndEvent) => void;
-  };
-  rowDnd: {
-    sensors: ReturnType<typeof useSensors>;
-    onDragEnd: (event: DragEndEvent) => void;
-  };
+export type UseTableDndReturn = {
+  handleDragStart: (e: DragStartEvent) => void;
+  handleDragOver: (e: DragOverEvent) => void;
+  handleDragEnd: (e: DragEndEvent) => void;
 };
 
-/**
- * Encapsulates dnd-kit sensors and drag-end handlers for the table.
- *
- * Usage:
- *   const { headerDnd, rowDnd } = useTableDnd({ headerIds, rowIds, moveColumn, moveRow });
- *   <DndContext {...headerDnd}>...</DndContext>
- *   <DndContext {...rowDnd}>...</DndContext>
- */
+function indexOfId(ids: ID[], id: ID): number {
+  const i = ids.indexOf(id);
+  return i < 0 ? -1 : i;
+}
+
 export default function useTableDnd({
   headerIds,
   rowIds,
-  moveColumn,
-  moveRow,
-  dragDistance = 6, // small threshold so typing/selecting text isn't interrupted
-}: UseTableDndArgs): UseTableDndResult {
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: dragDistance } })
-  );
+  onReorderColumns,
+  onReorderRows,
+}: UseTableDndParams): UseTableDndReturn {
+  const handleDragStart = useCallback((_e: DragStartEvent) => {}, []);
 
-  const onHeaderDragEnd = useCallback(
-    ({ active, over }: DragEndEvent) => {
-      if (!over || active.id === over.id) return;
-      const from = headerIds.indexOf(active.id as DraggableId);
-      const to = headerIds.indexOf(over.id as DraggableId);
-      if (from !== -1 && to !== -1) moveColumn(from, to);
+  const handleDragOver = useCallback((_e: DragOverEvent) => {}, []);
+
+  const handleDragEnd = useCallback(
+    (e: DragEndEvent) => {
+      const { active, over } = e;
+      if (!over) return;
+
+      const activeId = active.id as ID;
+      const overId = over.id as ID;
+      if (activeId === overId) return;
+
+      // headers?
+      const fromHeader = indexOfId(headerIds, activeId);
+      const toHeader = indexOfId(headerIds, overId);
+      if (fromHeader !== -1 && toHeader !== -1) {
+        onReorderColumns(fromHeader, toHeader);
+        return;
+      }
+
+      // rows?
+      const fromRow = indexOfId(rowIds, activeId);
+      const toRow = indexOfId(rowIds, overId);
+      if (fromRow !== -1 && toRow !== -1) {
+        onReorderRows(fromRow, toRow);
+        return;
+      }
     },
-    [headerIds, moveColumn]
+    [headerIds, rowIds, onReorderColumns, onReorderRows]
   );
 
-  const onRowDragEnd = useCallback(
-    ({ active, over }: DragEndEvent) => {
-      if (!over || active.id === over.id) return;
-      const from = rowIds.indexOf(active.id as DraggableId);
-      const to = rowIds.indexOf(over.id as DraggableId);
-      if (from !== -1 && to !== -1) moveRow(from, to);
-    },
-    [rowIds, moveRow]
-  );
-
-  return {
-    headerDnd: { sensors, onDragEnd: onHeaderDragEnd },
-    rowDnd: { sensors, onDragEnd: onRowDragEnd },
-  };
+  return { handleDragStart, handleDragOver, handleDragEnd };
 }
