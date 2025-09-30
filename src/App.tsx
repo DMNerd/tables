@@ -1,6 +1,6 @@
-import React from 'react';
 import { withSwal } from 'react-sweetalert2';
 import { FaPlus, FaColumns, FaFileAlt, FaUpload, FaTrash } from 'react-icons/fa';
+import type Swal from 'sweetalert2';
 import '@/styles/App.css';
 
 import useTable from '@/hooks/useTable';
@@ -21,8 +21,12 @@ import {
 import SortableHeaderCell from '@/components/SortableHeaderCell';
 import SortableRow from '@/components/SortableRow';
 
-function App({ swal }) {
-  const showError = (message) =>
+type AppProps = {
+  swal: typeof Swal;
+};
+
+function App({ swal }: AppProps): JSX.Element {
+  const showError = (message: string) =>
     swal.fire({ icon: 'error', title: 'Chyba', text: message, confirmButtonText: 'OK' });
 
   const { parse } = useHtmlTableParser();
@@ -54,7 +58,7 @@ function App({ swal }) {
     moveRow,
   });
 
-  const handleDeleteColumn = (i) => {
+  const handleDeleteColumn = (i: number) => {
     const ok = deleteColumn(i);
     if (!ok) showError('Nelze odstranit poslední sloupec.');
   };
