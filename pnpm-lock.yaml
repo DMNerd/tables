@@ -20,9 +20,6 @@ importers:
       '@dnd-kit/utilities':
         specifier: ^3.2.2
         version: 3.2.2(react@18.3.1)
-      debounce:
-        specifier: ^2.2.0
-        version: 2.2.0
       dompurify:
         specifier: ^3.2.6
         version: 3.2.6
@@ -41,6 +38,9 @@ importers:
       react-sweetalert2:
         specifier: ^0.6.0
         version: 0.6.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      use-debounce:
+        specifier: ^10.0.6
+        version: 10.0.6(react@18.3.1)
     devDependencies:
       '@vitejs/plugin-react':
         specifier: ^4.0.3
@@ -475,10 +475,6 @@ packages:
   core-util-is@1.0.3:
     resolution: {integrity: sha512-ZQBvi1DcpJ4GDqanjucZ2Hj3wEO5pZDS89BWbkcrvdxksJorwUDDZamX9ldFkp9aw2lmBDLgkObEA4DWNJ9FYQ==}
 
-  debounce@2.2.0:
-    resolution: {integrity: sha512-Xks6RUDLZFdz8LIdR6q0MTH44k7FikOmnh5xkSjMig6ch45afc8sjTjRQf3P6ax8dMgcQrYO/AR2RGWURrruqw==}
-    engines: {node: '>=18'}
-
   debug@4.4.1:
     resolution: {integrity: sha512-KcKCqiftBJcZr++7ykoDIEwSa3XWowTfNPo92BYxjXiyYEVrUQh2aLyhxBCwww+heortUFxEJYcRzosstTEBYQ==}
     engines: {node: '>=6.0'}
@@ -661,6 +657,12 @@ packages:
     hasBin: true
     peerDependencies:
       browserslist: '>= 4.21.0'
+
+  use-debounce@10.0.6:
+    resolution: {integrity: sha512-C5OtPyhAZgVoteO9heXMTdW7v/IbFI+8bSVKYCJrSmiWWCLsbUxiBSp4t9v0hNBTGY97bT72ydDIDyGSFWfwXg==}
+    engines: {node: '>= 16.0.0'}
+    peerDependencies:
+      react: '*'
 
   util-deprecate@1.0.2:
     resolution: {integrity: sha512-EPD5q1uXyFxJpCrLnCc1nHnq3gOa6DZBocAIiI2TaSCA7VCJ1UJDMagCzIkXNsUYfD1daK//LTEQ8xiIbrHtcw==}
@@ -1063,8 +1065,6 @@ snapshots:
 
   core-util-is@1.0.3: {}
 
-  debounce@2.2.0: {}
-
   debug@4.4.1:
     dependencies:
       ms: 2.1.3
@@ -1274,6 +1274,10 @@ snapshots:
       browserslist: 4.25.4
       escalade: 3.2.0
       picocolors: 1.1.1
+
+  use-debounce@10.0.6(react@18.3.1):
+    dependencies:
+      react: 18.3.1
 
   util-deprecate@1.0.2: {}
 

@@ -7,14 +7,10 @@ import useTable from '@/hooks/useTable';
 import useHtmlTableParser from '@/hooks/useHtmlTableParser';
 import useMarkdownSync from '@/hooks/useMarkdownSync';
 import useFileImport from '@/hooks/useFileImport';
+import useTableDnd from '@/hooks/useTableDnd';
 
 // dnd-kit
-import {
-  DndContext,
-  PointerSensor,
-  useSensor,
-  useSensors,
-} from '@dnd-kit/core';
+import { DndContext } from '@dnd-kit/core';
 import {
   SortableContext,
   verticalListSortingStrategy,
@@ -35,7 +31,7 @@ function App({ swal }) {
     headers, rows, headerIds, rowIds,
     addRow, addColumn, deleteRow, deleteColumn,
     updateHeader, updateCell, setFromGrid,
-    moveRow, moveColumn, // <-- required for DnD
+    moveRow, moveColumn,
   } = useTable(3, 2);
 
   const {
@@ -51,31 +47,16 @@ function App({ swal }) {
     onError: showError,
   });
 
+  const { headerDnd, rowDnd } = useTableDnd({
+    headerIds,
+    rowIds,
+    moveColumn,
+    moveRow,
+  });
+
   const handleDeleteColumn = (i) => {
     const ok = deleteColumn(i);
     if (!ok) showError('Nelze odstranit poslední sloupec.');
-  };
-
-  // DnD sensors (small drag threshold so typing/selecting text isn't interrupted)
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } })
-  );
-
-  // Drag end handlers
-  const onHeaderDragEnd = (event) => {
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
-    const from = headerIds.indexOf(active.id);
-    const to = headerIds.indexOf(over.id);
-    if (from !== -1 && to !== -1) moveColumn(from, to);
-  };
-
-  const onRowDragEnd = (event) => {
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
-    const from = rowIds.indexOf(active.id);
-    const to = rowIds.indexOf(over.id);
-    if (from !== -1 && to !== -1) moveRow(from, to);
   };
 
   return (
@@ -93,7 +74,7 @@ function App({ swal }) {
         </div>
 
         {/* Columns: draggable headers in their own DnD context */}
-        <DndContext sensors={sensors} onDragEnd={onHeaderDragEnd}>
+        <DndContext {...headerDnd}>
           <SortableContext items={headerIds} strategy={horizontalListSortingStrategy}>
             <table id="inputTable">
               <tbody>
@@ -118,7 +99,7 @@ function App({ swal }) {
         <hr className="separator" />
 
         {/* Rows: draggable rows in their own DnD context */}
-        <DndContext sensors={sensors} onDragEnd={onRowDragEnd}>
+        <DndContext {...rowDnd}>
           <SortableContext items={rowIds} strategy={verticalListSortingStrategy}>
             <table id="inputTableRows">
               <tbody>

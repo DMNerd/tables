@@ -1,14 +1,20 @@
-import { useState, useMemo, useCallback } from 'react';
-import debounce from 'debounce';
-import * as mammoth from 'mammoth/mammoth.browser.js';
+import { useState, useCallback, useRef } from 'react';
+import { useDebouncedCallback } from 'use-debounce';
 import { sanitizeHtml } from '@/utils/sanitize';
 
 export default function useFileImport({ parseHtmlTable, setFromGrid, onError }) {
   const [storedTables, setStoredTables] = useState([]);
   const [selectedTableIndex, setSelectedTableIndex] = useState('');
 
+  const parserRef = useRef(typeof window !== 'undefined' ? new DOMParser() : null);
+
+  const parseDoc = useCallback((html) => {
+    const parser = parserRef.current ?? new DOMParser();
+    return parser.parseFromString(sanitizeHtml(html), 'text/html');
+  }, []);
+
   const processHtmlFile = useCallback((htmlText) => {
-    const docHtml = new DOMParser().parseFromString(sanitizeHtml(htmlText), 'text/html');
+    const docHtml = parseDoc(htmlText);
     const tables = docHtml.querySelectorAll('table');
     if (!tables.length) {
       onError?.('V souboru nebyla nalezena validní tabulka.');
@@ -21,12 +27,13 @@ export default function useFileImport({ parseHtmlTable, setFromGrid, onError }) 
     const grid = parseHtmlTable(tables[0]);
     if (grid) setFromGrid(grid);
     else onError?.('Nepodařilo se zpracovat tabulku.');
-  }, [onError, parseHtmlTable, setFromGrid]);
+  }, [onError, parseDoc, parseHtmlTable, setFromGrid]);
 
   const processDocxFile = useCallback(async (arrayBuffer) => {
     try {
-      const { value } = await mammoth.convertToHtml({ arrayBuffer });
-      const docHtml = new DOMParser().parseFromString(sanitizeHtml(value), 'text/html');
+      const { convertToHtml } = await import('mammoth/mammoth.browser.js');
+      const { value } = await convertToHtml({ arrayBuffer });
+      const docHtml = parseDoc(value);
       const tables = docHtml.querySelectorAll('table');
       if (!tables.length) {
         onError?.('V souboru nebyla nalezena validní tabulka.');
@@ -43,7 +50,7 @@ export default function useFileImport({ parseHtmlTable, setFromGrid, onError }) 
       console.error('Error processing DOCX file:', err);
       onError?.('Chyba zpracování souboru.');
     }
-  }, [onError, parseHtmlTable, setFromGrid]);
+  }, [onError, parseDoc, parseHtmlTable, setFromGrid]);
 
   const handleFileUpload = useCallback((fileInputEvent) => {
     const file = fileInputEvent.target.files?.[0];
@@ -65,15 +72,14 @@ export default function useFileImport({ parseHtmlTable, setFromGrid, onError }) 
     fileInputEvent.target.value = '';
   }, [onError, processDocxFile, processHtmlFile]);
 
-  const debouncedPopulateTable = useMemo(
-    () => debounce((idx) => {
-      if (idx === '' || !storedTables.length) return;
-      const grid = parseHtmlTable(storedTables[idx]);
-      if (grid) setFromGrid(grid);
-      else onError?.('Nepodařilo se zpracovat vybranou tabulku.');
-    }, 150),
-    [parseHtmlTable, setFromGrid, storedTables, onError]
-  );
+  const debouncedPopulateTable = useDebouncedCallback((idx) => {
+    if (idx === '' || !storedTables.length) return;
+    const i = Number(idx);
+    const source = storedTables[i];
+    const grid = parseHtmlTable(source);
+    if (grid) setFromGrid(grid);
+    else onError?.('Nepodařilo se zpracovat vybranou tabulku.');
+  }, 150, { maxWait: 500 });
 
   const handleTableSelect = useCallback((e) => {
     const idx = e.target.value;
@@ -86,7 +92,7 @@ export default function useFileImport({ parseHtmlTable, setFromGrid, onError }) 
     selectedTableIndex,
     handleFileUpload,
     handleTableSelect,
-    setStoredTables, // exposed in case you need manual control
+    setStoredTables,
     setSelectedTableIndex,
   };
 }
