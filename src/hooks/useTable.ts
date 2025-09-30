@@ -1,9 +1,10 @@
 import { useState, useCallback } from 'react';
 import useIdFactory from '@/hooks/useIdFactory';
 import { sanitizeText } from '@/utils/sanitize';
+import type { TableGrid, SetFromGrid } from '@/types/table';
 
 // small immutable mover
-const arrayMove = (arr, from, to) => {
+const arrayMove = <T,>(arr: T[], from: number, to: number): T[] => {
   if (from === to) return arr;
   const copy = [...arr];
   const [item] = copy.splice(from, 1);
@@ -11,28 +12,44 @@ const arrayMove = (arr, from, to) => {
   return copy;
 };
 
-export default function useTable(initialCols = 3, initialRows = 2) {
+type UseTableResult = {
+  headers: string[];
+  rows: string[][];
+  headerIds: number[];
+  rowIds: number[];
+  addRow: () => void;
+  addColumn: () => void;
+  deleteRow: (index: number) => void;
+  deleteColumn: (index: number) => boolean;
+  updateHeader: (index: number, value: string) => void;
+  updateCell: (rowIndex: number, cellIndex: number, value: string) => void;
+  setFromGrid: SetFromGrid;
+  moveRow: (from: number, to: number) => void;
+  moveColumn: (from: number, to: number) => void;
+};
+
+export default function useTable(initialCols = 3, initialRows = 2): UseTableResult {
   const getId = useIdFactory();
 
   // IMPORTANT: use Array.from, not Array(n).map(...)
-  const [headers, setHeaders] = useState(
+  const [headers, setHeaders] = useState<string[]>(
     Array.from({ length: initialCols }, () => '')
   );
-  const [rows, setRows] = useState(
+  const [rows, setRows] = useState<string[][]>(
     Array.from({ length: initialRows }, () =>
       Array.from({ length: initialCols }, () => '')
     )
   );
-  const [headerIds, setHeaderIds] = useState(
+  const [headerIds, setHeaderIds] = useState<number[]>(
     Array.from({ length: initialCols }, () => getId())
   );
-  const [rowIds, setRowIds] = useState(
+  const [rowIds, setRowIds] = useState<number[]>(
     Array.from({ length: initialRows }, () => getId())
   );
 
-  const setFromGrid = useCallback(
+  const setFromGrid = useCallback<SetFromGrid>(
     (grid) => {
-      if (!grid || !grid.length) return;
+      if (!grid.length) return;
       const [h, ...r] = grid;
 
       const safeHeaders = Array.isArray(h) ? h : [];
@@ -60,7 +77,7 @@ export default function useTable(initialCols = 3, initialRows = 2) {
     setRows((prev) => prev.map((row) => [...row, '']));
   }, [getId]);
 
-  const deleteColumn = useCallback((index) => {
+  const deleteColumn = useCallback((index: number) => {
     // return false if we would remove the last column
     let ok = true;
     setHeaders((prev) => {
@@ -98,7 +115,7 @@ export default function useTable(initialCols = 3, initialRows = 2) {
     setRowIds((prev) => [...prev, getId()]);
   }, [headers.length, getId]);
 
-  const deleteRow = useCallback((index) => {
+  const deleteRow = useCallback((index: number) => {
     setRows((prev) => {
       const next = [...prev];
       next.splice(index, 1);
@@ -112,13 +129,13 @@ export default function useTable(initialCols = 3, initialRows = 2) {
   }, []);
 
   // -------- Updates --------
-  const updateHeader = useCallback((index, value) => {
-    const v = sanitizeText ? sanitizeText(value) : value;
+  const updateHeader = useCallback((index: number, value: string) => {
+    const v = sanitizeText(value);
     setHeaders((prev) => prev.map((h, i) => (i === index ? v : h)));
   }, []);
 
-  const updateCell = useCallback((rowIndex, cellIndex, value) => {
-    const v = sanitizeText ? sanitizeText(value) : value;
+  const updateCell = useCallback((rowIndex: number, cellIndex: number, value: string) => {
+    const v = sanitizeText(value);
     setRows((prev) =>
       prev.map((row, r) =>
         r === rowIndex
@@ -129,24 +146,24 @@ export default function useTable(initialCols = 3, initialRows = 2) {
   }, []);
 
   // -------- Reorder (DnD) --------
-  const moveRow = useCallback((from, to) => {
+  const moveRow = useCallback((from: number, to: number) => {
     setRows((prev) => arrayMove(prev, from, to));
     setRowIds((prev) => arrayMove(prev, from, to));
   }, []);
 
-    const moveColumn = useCallback((from, to) => {
+  const moveColumn = useCallback((from: number, to: number) => {
     if (from === to) return;
-    setHeaders(prev => arrayMove(prev, from, to));
-    setHeaderIds(prev => arrayMove(prev, from, to));
-    setRows(prev =>
-        prev.map(row => {
+    setHeaders((prev) => arrayMove(prev, from, to));
+    setHeaderIds((prev) => arrayMove(prev, from, to));
+    setRows((prev) =>
+      prev.map((row) => {
         const copy = [...row];
         const [cell] = copy.splice(from, 1);
         copy.splice(to, 0, cell);
         return copy;
-        })
+      })
     );
-    }, []);
+  }, []);
 
   return {
     headers,
