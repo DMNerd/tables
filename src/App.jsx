@@ -1,3 +1,4 @@
+import React from 'react';
 import { withSwal } from 'react-sweetalert2';
 import { FaPlus, FaColumns, FaFileAlt, FaUpload, FaTrash } from 'react-icons/fa';
 import '@/styles/App.css';
@@ -6,6 +7,23 @@ import useTable from '@/hooks/useTable';
 import useHtmlTableParser from '@/hooks/useHtmlTableParser';
 import useMarkdownSync from '@/hooks/useMarkdownSync';
 import useFileImport from '@/hooks/useFileImport';
+
+// dnd-kit
+import {
+  DndContext,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  horizontalListSortingStrategy,
+} from '@dnd-kit/sortable';
+
+// Sortable wrappers
+import SortableHeaderCell from '@/components/SortableHeaderCell';
+import SortableRow from '@/components/SortableRow';
 
 function App({ swal }) {
   const showError = (message) =>
@@ -17,6 +35,7 @@ function App({ swal }) {
     headers, rows, headerIds, rowIds,
     addRow, addColumn, deleteRow, deleteColumn,
     updateHeader, updateCell, setFromGrid,
+    moveRow, moveColumn, // <-- required for DnD
   } = useTable(3, 2);
 
   const {
@@ -37,6 +56,28 @@ function App({ swal }) {
     if (!ok) showError('Nelze odstranit poslední sloupec.');
   };
 
+  // DnD sensors (small drag threshold so typing/selecting text isn't interrupted)
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } })
+  );
+
+  // Drag end handlers
+  const onHeaderDragEnd = (event) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const from = headerIds.indexOf(active.id);
+    const to = headerIds.indexOf(over.id);
+    if (from !== -1 && to !== -1) moveColumn(from, to);
+  };
+
+  const onRowDragEnd = (event) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const from = rowIds.indexOf(active.id);
+    const to = rowIds.indexOf(over.id);
+    if (from !== -1 && to !== -1) moveRow(from, to);
+  };
+
   return (
     <div>
       <h1>Generátor Tabulek (pro vložení do markdown)</h1>
@@ -51,68 +92,80 @@ function App({ swal }) {
           </button>
         </div>
 
-        <table id="inputTable">
-          <tbody>
-            <tr>
-              {headers.map((header, i) => (
-                <th key={headerIds[i]}>
-                  <input
-                    type="text"
-                    value={header}
-                    placeholder={`Nadpis ${i + 1}`}
-                    onChange={(e) => updateHeader(i, e.target.value)}
-                  />
-                </th>
-              ))}
-              <th className="delete-cell" />
-            </tr>
-          </tbody>
-        </table>
+        {/* Columns: draggable headers in their own DnD context */}
+        <DndContext sensors={sensors} onDragEnd={onHeaderDragEnd}>
+          <SortableContext items={headerIds} strategy={horizontalListSortingStrategy}>
+            <table id="inputTable">
+              <tbody>
+                <tr>
+                  {headers.map((header, i) => (
+                    <SortableHeaderCell key={headerIds[i]} id={headerIds[i]}>
+                      <input
+                        type="text"
+                        value={header}
+                        placeholder={`Nadpis ${i + 1}`}
+                        onChange={(e) => updateHeader(i, e.target.value)}
+                      />
+                    </SortableHeaderCell>
+                  ))}
+                  <th className="delete-cell" />
+                </tr>
+              </tbody>
+            </table>
+          </SortableContext>
+        </DndContext>
 
         <hr className="separator" />
 
-        <table id="inputTableRows">
-          <tbody>
-            {rows.map((row, rowIndex) => (
-              <tr key={rowIds[rowIndex]}>
-                {row.map((cell, cellIndex) => (
-                  <td key={`${rowIds[rowIndex]}-${headerIds[cellIndex]}`}>
-                    <input
-                      type="text"
-                      value={cell}
-                      placeholder={`Řádek ${rowIndex + 1}, Sloupec ${cellIndex + 1}`}
-                      onChange={(e) => updateCell(rowIndex, cellIndex, e.target.value)}
-                    />
-                  </td>
+        {/* Rows: draggable rows in their own DnD context */}
+        <DndContext sensors={sensors} onDragEnd={onRowDragEnd}>
+          <SortableContext items={rowIds} strategy={verticalListSortingStrategy}>
+            <table id="inputTableRows">
+              <tbody>
+                {rows.map((row, rowIndex) => (
+                  <SortableRow key={rowIds[rowIndex]} id={rowIds[rowIndex]}>
+                    {row.map((cell, cellIndex) => (
+                      <td key={`${rowIds[rowIndex]}-${headerIds[cellIndex]}`}>
+                        <input
+                          type="text"
+                          value={cell}
+                          placeholder={`Řádek ${rowIndex + 1}, Sloupec ${cellIndex + 1}`}
+                          onChange={(e) => updateCell(rowIndex, cellIndex, e.target.value)}
+                        />
+                      </td>
+                    ))}
+                    <td className="delete-cell">
+                      <button
+                        className="delete-row-btn"
+                        onClick={() => deleteRow(rowIndex)}
+                        title="Smazat řádek"
+                      >
+                        <FaTrash />
+                      </button>
+                    </td>
+                  </SortableRow>
                 ))}
-                <td className="delete-cell">
-                  <button
-                    className="delete-row-btn"
-                    onClick={() => deleteRow(rowIndex)}
-                    title="Smazat řádek"
-                  >
-                    <FaTrash />
-                  </button>
-                </td>
-              </tr>
-            ))}
-            <tr className="column-delete-row">
-              {headers.map((_, i) => (
-                <td key={headerIds[i]} className="delete-column-cell">
-                  <button
-                    className="delete-column-btn"
-                    onClick={() => handleDeleteColumn(i)}
-                    disabled={headers.length <= 1}
-                    title="Smazat sloupec"
-                  >
-                    <FaTrash />
-                  </button>
-                </td>
-              ))}
-              <td className="delete-cell" />
-            </tr>
-          </tbody>
-        </table>
+
+                {/* Column delete controls row (stays in sync with headerIds order) */}
+                <tr className="column-delete-row">
+                  {headers.map((_, i) => (
+                    <td key={headerIds[i]} className="delete-column-cell">
+                      <button
+                        className="delete-column-btn"
+                        onClick={() => handleDeleteColumn(i)}
+                        disabled={headers.length <= 1}
+                        title="Smazat sloupec"
+                      >
+                        <FaTrash />
+                      </button>
+                    </td>
+                  ))}
+                  <td className="delete-cell" />
+                </tr>
+              </tbody>
+            </table>
+          </SortableContext>
+        </DndContext>
 
         <div className="action-buttons">
           <button className="primary-btn" onClick={generateMarkdown}>
