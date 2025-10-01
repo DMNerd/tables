@@ -1,3 +1,4 @@
+// src/App.tsx
 import { withSwal } from 'react-sweetalert2';
 import { FaPlus, FaColumns, FaFileAlt, FaUpload, FaTrash } from 'react-icons/fa';
 import type Swal from 'sweetalert2';
@@ -17,7 +18,7 @@ import {
   horizontalListSortingStrategy,
 } from '@dnd-kit/sortable';
 
-// Sortable wrappers
+// Sortable wrappers (now memoized and typed with UniqueIdentifier)
 import SortableHeaderCell from '@/components/SortableHeaderCell';
 import SortableRow from '@/components/SortableRow';
 
@@ -32,30 +33,44 @@ function App({ swal }: AppProps): JSX.Element {
   const { parse } = useHtmlTableParser();
 
   const {
-    headers, rows, headerIds, rowIds,
-    addRow, addColumn, deleteRow, deleteColumn,
-    updateHeader, updateCell, setFromGrid,
-    moveRow, moveColumn,
+    headers,
+    rows,
+    headerIds,
+    rowIds,
+    addRow,
+    addColumn,
+    deleteRow,
+    deleteColumn,
+    updateHeader,
+    updateCell,
+    setFromGrid,
+    moveRow,
+    moveColumn,
   } = useTable(3, 2);
 
-  const {
-    markdown, setMarkdown, generateMarkdown, onMarkdownChange,
-  } = useMarkdownSync(headers, rows, setFromGrid);
+  const { markdown, setMarkdown, generateMarkdown, onMarkdownChange } = useMarkdownSync(
+    headers,
+    rows,
+    setFromGrid
+  );
 
   const {
-    storedTables, selectedTableIndex,
-    handleFileUpload, handleTableSelect,
+    storedTables,
+    selectedTableIndex,
+    handleFileUpload,
+    handleTableSelect,
   } = useFileImport({
     parseHtmlTable: parse,
     setFromGrid,
     onError: showError,
   });
 
-  const { headerDnd, rowDnd } = useTableDnd({
+  // NEW: useTableDnd now returns explicit handlers; works for both headers & rows
+  const { handleDragStart, handleDragOver, handleDragEnd } = useTableDnd({
     headerIds,
     rowIds,
-    moveColumn,
-    moveRow,
+    onReorderColumns: moveColumn,
+    onReorderRows: moveRow,
   });
 
   const handleDeleteColumn = (i: number) => {
@@ -77,8 +92,8 @@ function App({ swal }: AppProps): JSX.Element {
           </button>
         </div>
 
-        {/* Columns: draggable headers in their own DnD context */}
-        <DndContext {...headerDnd}>
+        {/* Columns: draggable headers */}
+        <DndContext onDragStart={handleDragStart} onDragOver={handleDragOver} onDragEnd={handleDragEnd}>
           <SortableContext items={headerIds} strategy={horizontalListSortingStrategy}>
             <table id="inputTable">
               <tbody>
@@ -102,8 +117,8 @@ function App({ swal }: AppProps): JSX.Element {
 
         <hr className="separator" />
 
-        {/* Rows: draggable rows in their own DnD context */}
-        <DndContext {...rowDnd}>
+        {/* Rows: draggable rows */}
+        <DndContext onDragStart={handleDragStart} onDragOver={handleDragOver} onDragEnd={handleDragEnd}>
           <SortableContext items={rowIds} strategy={verticalListSortingStrategy}>
             <table id="inputTableRows">
               <tbody>
@@ -124,6 +139,7 @@ function App({ swal }: AppProps): JSX.Element {
                         className="delete-row-btn"
                         onClick={() => deleteRow(rowIndex)}
                         title="Smazat řádek"
+                        aria-label={`Smazat řádek ${rowIndex + 1}`}
                       >
                         <FaTrash />
                       </button>
@@ -139,7 +155,9 @@ function App({ swal }: AppProps): JSX.Element {
                         className="delete-column-btn"
                         onClick={() => handleDeleteColumn(i)}
                         disabled={headers.length <= 1}
+                        aria-disabled={headers.length <= 1}
                         title="Smazat sloupec"
+                        aria-label={`Smazat sloupec ${i + 1}`}
                       >
                         <FaTrash />
                       </button>
