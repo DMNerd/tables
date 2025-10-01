@@ -1,6 +1,8 @@
 // src/App.tsx
+import React from 'react';
 import { withSwal } from 'react-sweetalert2';
 import { FaPlus, FaColumns, FaFileAlt, FaUpload, FaTrash } from 'react-icons/fa';
+import clsx from 'clsx';
 import type Swal from 'sweetalert2';
 import '@/styles/App.css';
 
@@ -11,14 +13,13 @@ import useFileImport from '@/hooks/useFileImport';
 import useTableDnd from '@/hooks/useTableDnd';
 
 // dnd-kit
-import { DndContext } from '@dnd-kit/core';
+import { DndContext, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import {
   SortableContext,
   verticalListSortingStrategy,
   horizontalListSortingStrategy,
 } from '@dnd-kit/sortable';
 
-// Sortable wrappers (now memoized and typed with UniqueIdentifier)
 import SortableHeaderCell from '@/components/SortableHeaderCell';
 import SortableRow from '@/components/SortableRow';
 
@@ -48,7 +49,7 @@ function App({ swal }: AppProps): JSX.Element {
     moveColumn,
   } = useTable(3, 2);
 
-  const { markdown, setMarkdown, generateMarkdown, onMarkdownChange } = useMarkdownSync(
+  const { markdown, generateMarkdown, onMarkdownChange } = useMarkdownSync(
     headers,
     rows,
     setFromGrid
@@ -65,13 +66,19 @@ function App({ swal }: AppProps): JSX.Element {
     onError: showError,
   });
 
-  // NEW: useTableDnd now returns explicit handlers; works for both headers & rows
   const { handleDragStart, handleDragOver, handleDragEnd } = useTableDnd({
     headerIds,
     rowIds,
     onReorderColumns: moveColumn,
     onReorderRows: moveRow,
   });
+
+  // Small threshold so clicks focus inputs, drags require slight movement
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 8 },
+    })
+  );
 
   const handleDeleteColumn = (i: number) => {
     const ok = deleteColumn(i);
@@ -92,8 +99,13 @@ function App({ swal }: AppProps): JSX.Element {
           </button>
         </div>
 
-        {/* Columns: draggable headers */}
-        <DndContext onDragStart={handleDragStart} onDragOver={handleDragOver} onDragEnd={handleDragEnd}>
+        {/* Columns: whole header cells are draggable; inputs stop pointer propagation */}
+        <DndContext
+          sensors={sensors}
+          onDragStart={handleDragStart}
+          onDragOver={handleDragOver}
+          onDragEnd={handleDragEnd}
+        >
           <SortableContext items={headerIds} strategy={horizontalListSortingStrategy}>
             <table id="inputTable">
               <tbody>
@@ -105,6 +117,7 @@ function App({ swal }: AppProps): JSX.Element {
                         value={header}
                         placeholder={`Nadpis ${i + 1}`}
                         onChange={(e) => updateHeader(i, e.target.value)}
+                        onPointerDown={(e) => e.stopPropagation()}
                       />
                     </SortableHeaderCell>
                   ))}
@@ -117,8 +130,13 @@ function App({ swal }: AppProps): JSX.Element {
 
         <hr className="separator" />
 
-        {/* Rows: draggable rows */}
-        <DndContext onDragStart={handleDragStart} onDragOver={handleDragOver} onDragEnd={handleDragEnd}>
+        {/* Rows: whole rows are draggable; inputs stop pointer propagation */}
+        <DndContext
+          sensors={sensors}
+          onDragStart={handleDragStart}
+          onDragOver={handleDragOver}
+          onDragEnd={handleDragEnd}
+        >
           <SortableContext items={rowIds} strategy={verticalListSortingStrategy}>
             <table id="inputTableRows">
               <tbody>
@@ -131,6 +149,7 @@ function App({ swal }: AppProps): JSX.Element {
                           value={cell}
                           placeholder={`Řádek ${rowIndex + 1}, Sloupec ${cellIndex + 1}`}
                           onChange={(e) => updateCell(rowIndex, cellIndex, e.target.value)}
+                          onPointerDown={(e) => e.stopPropagation()}
                         />
                       </td>
                     ))}
@@ -152,7 +171,9 @@ function App({ swal }: AppProps): JSX.Element {
                   {headers.map((_, i) => (
                     <td key={headerIds[i]} className="delete-column-cell">
                       <button
-                        className="delete-column-btn"
+                        className={clsx('delete-column-btn', {
+                          disabled: headers.length <= 1,
+                        })}
                         onClick={() => handleDeleteColumn(i)}
                         disabled={headers.length <= 1}
                         aria-disabled={headers.length <= 1}
@@ -189,6 +210,7 @@ function App({ swal }: AppProps): JSX.Element {
             value={selectedTableIndex}
             onChange={handleTableSelect}
             disabled={storedTables.length === 0}
+            className={clsx({ disabled: storedTables.length === 0 })}
           >
             <option value="" disabled>
               Nejdříve nahrajte soubor

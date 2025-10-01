@@ -2,9 +2,10 @@ import React, { memo } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { UniqueIdentifier } from '@dnd-kit/core';
+import clsx from 'clsx';
 
 export type SortableHeaderCellProps = {
-  id: UniqueIdentifier;           // <-- was string
+  id: UniqueIdentifier;
   children: React.ReactNode;
   className?: string;
   style?: React.CSSProperties;
@@ -12,19 +13,39 @@ export type SortableHeaderCellProps = {
   as?: 'th' | 'div';
 };
 
-function SortableHeaderCellBase({ id, children, className, style, disabled = false, as = 'th' }: SortableHeaderCellProps) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id, disabled });
+function SortableHeaderCellBase({
+  id,
+  children,
+  className,
+  style,
+  disabled = false,
+  as = 'th',
+}: SortableHeaderCellProps) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id, disabled });
+
   const finalStyle: React.CSSProperties = {
     ...style,
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.6 : undefined,
-    cursor: disabled ? 'default' : 'grab',
-    userSelect: 'none',
   };
+
+  const classes = clsx(className, 'sortable-header', {
+    'is-dragging': isDragging,
+    'is-dnd-disabled': disabled,
+    'is-draggable': !disabled,
+  });
+
   const Comp: any = as;
+
   return (
-    <Comp ref={setNodeRef} className={className} style={finalStyle} {...attributes} {...listeners}>
+    <Comp
+      ref={setNodeRef}
+      className={classes}
+      style={finalStyle}
+      {...attributes}
+      {...listeners}   // whole header cell is the drag target
+    >
       {children}
     </Comp>
   );

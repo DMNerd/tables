@@ -271,3 +271,17 @@ hr.separator {
 #inputTable {
     margin-bottom: 0 !important;
 }
+
+.drag-handle {
+  cursor: grab;
+  user-select: none;
+  display: inline-block;
+  padding: 0 6px;
+  line-height: 1;
+}
+.drag-handle:active { cursor: grabbing; }
+
+.drag-handle-cell {
+  width: 1%;
+  white-space: nowrap;
+}
