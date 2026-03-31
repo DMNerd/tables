@@ -1,9 +1,8 @@
-// src/App.tsx
 import React from 'react';
-import { withSwal } from 'react-sweetalert2';
 import { FaPlus, FaColumns, FaFileAlt, FaUpload, FaTrash } from 'react-icons/fa';
 import clsx from 'clsx';
-import type Swal from 'sweetalert2';
+import Swal from 'sweetalert2';
+import withReactContent from 'sweetalert2-react-content';
 import '@/styles/App.css';
 
 import useTable from '@/hooks/useTable';
@@ -23,11 +22,9 @@ import {
 import SortableHeaderCell from '@/components/SortableHeaderCell';
 import SortableRow from '@/components/SortableRow';
 
-type AppProps = {
-  swal: typeof Swal;
-};
+const swal = withReactContent(Swal);
 
-function App({ swal }: AppProps): JSX.Element {
+function App() {
   const showError = (message: string) =>
     swal.fire({ icon: 'error', title: 'Chyba', text: message, confirmButtonText: 'OK' });
 
@@ -73,7 +70,6 @@ function App({ swal }: AppProps): JSX.Element {
     onReorderRows: moveRow,
   });
 
-  // Small threshold so clicks focus inputs, drags require slight movement
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: { distance: 8 },
@@ -99,7 +95,6 @@ function App({ swal }: AppProps): JSX.Element {
           </button>
         </div>
 
-        {/* Columns: whole header cells are draggable; inputs stop pointer propagation */}
         <DndContext
           sensors={sensors}
           onDragStart={handleDragStart}
@@ -130,7 +125,6 @@ function App({ swal }: AppProps): JSX.Element {
 
         <hr className="separator" />
 
-        {/* Rows: whole rows are draggable; inputs stop pointer propagation */}
         <DndContext
           sensors={sensors}
           onDragStart={handleDragStart}
@@ -166,7 +160,6 @@ function App({ swal }: AppProps): JSX.Element {
                   </SortableRow>
                 ))}
 
-                {/* Column delete controls row (stays in sync with headerIds order) */}
                 <tr className="column-delete-row">
                   {headers.map((_, i) => (
                     <td key={headerIds[i]} className="delete-column-cell">
@@ -236,4 +229,4 @@ function App({ swal }: AppProps): JSX.Element {
   );
 }
 
-export default withSwal(App);
+export default App;
